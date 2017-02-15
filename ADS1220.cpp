@@ -1,14 +1,33 @@
+/***********************************************************************************************************************************************************************************************
+* File Name     : ADS1220.cpp                                                                                                                                                                                                                                                                                                                                    *
+* Author        : Sandeep Reddy Malladi                                                                                                                                                                                                                                                                                                                  *
+* Designation : Entwicklungs ingenieur                                                                                                                                                         *
+* Company       : PCE Entwicklungs                                                                                                                                                               *
+* Version       : 1.0                                                                                                                                                                            *
+* Description : Low level drivers to implement for ADS1220 Using SPI Communication.                                                                                                                                          *
+*                                                                                                                                                                                              *
+*                                                                                                                                                                                              *
+************************************************************************************************************************************************************************************************/
+
 #include "mbed.h"
 #include "ADS1220.h"
 #include <inttypes.h>
 
-ADS1220::ADS1220(PinName mosi, PinName miso, PinName sclk):
-    _device(mosi, miso, sclk)
+ADS1220::ADS1220(PinName mosi, PinName miso, PinName sclk,PinName cs):
+    _device(mosi, miso, sclk),nCS_(cs)
 {
     _device.frequency(4000000);
     _device.format(8,1);
 }
 
+void ADS1220::AssertCS( int fAssert)
+{
+   if (fAssert)
+         nCS_ = 1;
+   else
+         nCS_ = 0; 
+      
+}
 
 // ADS1220 Initial Configuration
 void ADS1220::Config(void)
@@ -26,7 +45,7 @@ void ADS1220::Config(void)
     ReadRegister(ADS1220_1_REGISTER, 0x01, &Temp);   
   // clear prev DataRate code;
     Temp &= 0x00;
-    Temp |= (ADS1220_DR_1000 | ADS1220_CC);      // Set default start mode to 600sps and continuous conversions
+    Temp |= (ADS1220_DR_20 | ADS1220_CC);      // Set default start mode to 600sps and continuous conversions
    
   // write the register value containing the new value back to the ADS
     WriteRegister(ADS1220_1_REGISTER, 0x01, &Temp);
@@ -36,7 +55,7 @@ void ADS1220::Config(void)
     
   // clear prev DataRate code;
     Temp &= 0x00;
-    Temp |= (ADS1220_VREF_EX_DED | ADS1220_REJECT_50);      // Set Internal Vref as 2.048 V
+    Temp |= (ADS1220_VREF_EX_DED | ADS1220_REJECT_BOTH);      // Set Internal Vref as 2.048 V
    
     // write the register value containing the new value back to the ADS
     WriteRegister(ADS1220_2_REGISTER, 0x01, &Temp);
@@ -68,7 +87,7 @@ unsigned int ADS1220::ReadData(void)
    
       
    // assert CS to start transfer
-  // ADS1220AssertCS(1);
+    AssertCS(1);
 
    // send the command byte
    SendByte(ADS1220_CMD_RDATA);
@@ -93,7 +112,7 @@ unsigned int ADS1220::ReadData(void)
    
 #endif
    // de-assert CS
-   //ADS1220AssertCS(0);
+   AssertCS(0);
    return Data;
 }
 
@@ -102,7 +121,7 @@ void ADS1220::ReadRegister(int StartAddress, int NumRegs, unsigned * pData)
    int i;
 
     // assert CS to start transfer
-//  ADS1220AssertCS(1);
+        AssertCS(1);
    
     // send the command byte
     SendByte(ADS1220_CMD_RREG | (((StartAddress<<2) & 0x0c) |((NumRegs-1)&0x03)));
@@ -114,7 +133,7 @@ void ADS1220::ReadRegister(int StartAddress, int NumRegs, unsigned * pData)
     }
    
     // de-assert CS
-//  ADS1220AssertCS(0);
+        AssertCS(0);
     
     return;
 }
@@ -124,7 +143,7 @@ void ADS1220::WriteRegister(int StartAddress, int NumRegs, unsigned * pData)
     int i;
    
     // assert CS to start transfer
-    //ADS1220AssertCS(1);
+    AssertCS(1);
    
     // send the command byte
     SendByte(ADS1220_CMD_WREG | (((StartAddress<<2) & 0x0c) |((NumRegs-1)&0x03)));
@@ -136,7 +155,7 @@ void ADS1220::WriteRegister(int StartAddress, int NumRegs, unsigned * pData)
     }
    
     // de-assert CS
-    //ADS1220AssertCS(0);
+    AssertCS(0);
    
     return;
 }
@@ -144,13 +163,13 @@ void ADS1220::WriteRegister(int StartAddress, int NumRegs, unsigned * pData)
 void ADS1220::SendResetCommand(void)
 {
     // assert CS to start transfer
-    //ADS1220AssertCS(1);
+    AssertCS(1);
    
     // send the command byte
     SendByte(ADS1220_CMD_RESET);
    
     // de-assert CS
-    //ADS1220AssertCS(0);
+    AssertCS(0);
    
     return;
 }
@@ -158,13 +177,13 @@ void ADS1220::SendResetCommand(void)
 void ADS1220::SendStartCommand(void)
 {
     // assert CS to start transfer
-    //ADS1220AssertCS(1);
+    AssertCS(1);
    
     // send the command byte
     SendByte(ADS1220_CMD_SYNC);
    
     // de-assert CS
-    //ADS1220AssertCS(0);
+    AssertCS(0);
      
     return;
 }
@@ -172,13 +191,13 @@ void ADS1220::SendStartCommand(void)
 void ADS1220::SendShutdownCommand(void)
 {
     // assert CS to start transfer
-    //ADS1220AssertCS(1);
+    AssertCS(1);
    
     // send the command byte
     SendByte(ADS1220_CMD_SHUTDOWN);
    
     // de-assert CS
-    //ADS1220AssertCS(0);
+    AssertCS(0);
      
     return;
 }
@@ -504,11 +523,11 @@ int ADS1220::GetDRDYMode(void)
 *
 *   Function names correspond to datasheet register definitions
 */
-void ADS1220::set_MUX(char c)
+void ADS1220::set_MUX(int c)
 {       
+          int mux = c - 48;
         int dERROR;
-    unsigned Temp;
-        char mux = (int) c - 48;
+        unsigned Temp;      
     
         
     if (mux>=49 && mux<=54) mux -= 39;

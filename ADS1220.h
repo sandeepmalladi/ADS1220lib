@@ -1,3 +1,13 @@
+/***********************************************************************************************************************************************************************************************
+* File Name     : ADS1220.h                                                                                                                                                                                                                                                                                                                                  *
+* Author        : Sandeep Reddy Malladi                                                                                                                                                                                                                                                                                                                  *
+* Designation : Entwicklungs ingenieur                                                                                                                                                                                                                                                                                                                       *
+* Version       : 1.0                                                                                                                                                                            *
+* Description : Low level drivers to implement for ADS1220 Using SPI Communication.                                                                                                                                          *
+*                                                                                                                                                                                              *
+*                                                                                                                                                                                              *
+************************************************************************************************************************************************************************************************/
+
 #ifndef ADS1220_H_
 #define ADS1220_H_
 #include "mbed.h"
@@ -39,7 +49,7 @@
 #define ADS1220_MUX_2_3     0x50
 #define ADS1220_MUX_1_0     0x60
 #define ADS1220_MUX_3_2     0x70
-#define ADS1220_MUX_0_G       0x80
+#define ADS1220_MUX_0_G     0x80
 #define ADS1220_MUX_1_G     0x90
 #define ADS1220_MUX_2_G     0xa0
 #define ADS1220_MUX_3_G     0xb0
@@ -155,7 +165,7 @@ public:
      * @param scl is the pin for I2C SCL
      * @param address is the 7-bit address (default is 0x27 for the device)
      */
-    ADS1220(PinName mosi, PinName miso, PinName sclk);
+    ADS1220(PinName mosi, PinName miso, PinName sclk, PinName cs);
 
 
         /* Low Level ADS1220 Device Functions */
@@ -172,7 +182,7 @@ public:
         void SendResetCommand(void);             // Send a device Reset Command
         void SendStartCommand(void);             // Send a Start/SYNC command
         void SendShutdownCommand(void);          // Place the device in powerdown mode
-
+                
 
         /* Register Set Value Commands */
         void Config(void);
@@ -220,7 +230,7 @@ public:
         *
         *   Function names correspond to datasheet register definitions
         */
-        void set_MUX(char c);
+        void set_MUX(int c);
         void set_GAIN(char c);
         void set_PGA_BYPASS(char c);
         void set_DR(char c);
@@ -239,7 +249,8 @@ public:
         void set_ERROR_Receive(void);
         
 private:
-    SPI _device;
+    SPI                 _device;
+    DigitalOut          nCS_;
     uint8_t _address;
     uint8_t _Comdelay;
 
